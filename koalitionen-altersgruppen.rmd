@@ -1,0 +1,99 @@
+---
+title: "Zweitstimmen der Regierungskoalitionen nach Altersgruppen in den Bundestagswahlen 1972-2017"
+author: "<a href='https://twitter.com/timwoelfle'>Tim Woelfle</a>"
+output:
+  html_notebook:
+    code_folding: hide
+---
+
+```{r,warning=F,message=F,fig.width=10.5,fig.height=5}
+library(plotly)
+library(tidyr)
+library(ggplot2)
+
+data = read.csv2("https://www.bundeswahlleiter.de/dam/jcr/f0610db5-f84c-430e-96e1-19be7f599e60/btw17_rws_zwst-1953.csv", skip = 10)
+data = data[data$Geschlecht == "Summe" & data$Bundestagswahl>1970,]
+colnames(data)[3] = "Altersgruppe"
+colnames(data)[6] = "LINKE"
+
+# Gesamtergebnisse für Wahlen 1994 und 1998 ergänzen (trotz ausgesetzter repräsentativer Wahlstatistik)´
+data = rbind(
+  data,
+  #https://www.bundeswahlleiter.de/bundestagswahlen/1994.html
+  list("Bundestagswahl"=1994, "Geschlecht"="Summe", "Altersgruppe"="Summe", "CDU"=34.2, "SPD"=36.4, "LINKE"=4.4, "GRÜNE"=7.3, "CSU"=7.3, "FDP"=6.9, "AfD"=NA, "Sonstige"=3.6),
+  #https://www.bundeswahlleiter.de/bundestagswahlen/1998.html
+  list("Bundestagswahl"=1998, "Geschlecht"="Summe", "Altersgruppe"="Summe", "CDU"=28.4, "SPD"=40.9, "LINKE"=5.1, "GRÜNE"=6.7, "CSU"=6.7, "FDP"=6.2, "AfD"=NA, "Sonstige"=5.9)
+)
+
+data["CDU/CSU"] = data$CDU + ifelse(!is.na(data$CSU), data$CSU, 0)
+
+kabinette = data.frame(
+  wahl = as.factor(c(1972, 1976, 1980, 1983, 1987, 1990, 1994, 1998, 2002, 2005, 2009, 2013, 2017)),
+  parteien = c("SPD,FDP", "SPD,FDP", "SPD,FDP", "CDU/CSU,FDP", "CDU/CSU,FDP", "CDU/CSU,FDP", "CDU/CSU,FDP", "SPD,GRÜNE", "SPD,GRÜNE", "CDU/CSU,SPD", "CDU/CSU,FDP", "CDU/CSU,SPD", "CDU/CSU,SPD"),
+  kabinett = c("Brandt II + Schmidt I", "Schmidt II", "Schmidt III", "Kohl II", "Kohl III", "Kohl IV", "Kohl V", "Schröder I", "Schröder II", "Merkel I", "Merkel II", "Merkel III", "Merkel IV")
+)
+rownames(kabinette) = kabinette$wahl
+
+zeitpunkte = c("18 - 24", "25 - 34", "35 - 44", "45 - 59", "60 und mehr")
+
+for (i in 1:nrow(kabinette)) {
+  wahl = data[data$Bundestagswahl == kabinette[i, "wahl"],]
+  if (nrow(wahl) == 0) next
+  rownames(wahl) = wahl$Altersgruppe
+  parteien = strsplit(kabinette[i, "parteien"], ",", fixed=T)[[1]]
+  summe = wahl["Summe", parteien]
+  
+  kabinette[i, zeitpunkte] = rowSums(wahl[zeitpunkte, parteien])-sum(summe)
+  
+  kabinette[i, "Summe"] = sum(summe)
+  
+  kabinette[i, "Gewinner1"] = parteien[1]
+  kabinette[i, "Gewinner2"] = parteien[2]
+  kabinette[i, "Prozente1"] = summe[1]/sum(summe)
+  kabinette[i, "Prozente2"] = summe[2]/sum(summe)
+}
+
+colorcode = list("CDU/CSU" = "black", "SPD" = "#e3000f", "FDP" = "yellow", "GRÜNE" = "#46962b", "LINKE" = "#be3075", "AfD" = "#009ee0", "Sonstige" = "#ffffff")
+
+get_tooltip = function(Wahl, Altersgruppe) {
+  sub = data[data$Bundestagswahl == Wahl & data$Altersgruppe == Altersgruppe,]
+  parteien = names(colorcode)[!is.na(sub[names(colorcode)])]
+  paste(sapply(
+    parteien,
+    function(partei) paste0("<span style='", ifelse(partei=="CDU/CSU", "text-shadow: 0px 0px 3px #ffffff; ", ""), "color:", colorcode[[partei]], "'>", partei, ": ", sub[partei], "%</span>")
+  )[order(sub[parteien], decreasing=T)], collapse="\n")
+}
+
+kabinette$tooltip = sapply(kabinette$wahl, function(x) get_tooltip(x, "Summe"))
+
+p1 = ggplotly(ggplot(data.frame(wahl=rep(kabinette$wahl, n=2), partei=factor(c(kabinette$Gewinner1, kabinette$Gewinner2), levels=rev(names(colorcode))), prozente=c(kabinette$Prozente1, kabinette$Prozente2))) +
+  geom_col(aes(prozente, wahl, fill=partei), position = position_fill()) +
+  geom_text(aes(x=0.5, wahl, label=paste0(Summe, "%"), text=tooltip), data=kabinette, color="white") +
+  scale_fill_manual(values=colorcode) +
+  theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position="none", axis.title.x=element_blank(), axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y=element_blank(), axis.text.y=element_blank(), axis.ticks.y=element_blank()), tooltip="text") %>%
+  style(hoverinfo = "none", traces = 1:4) %>%
+  layout(hovermode="closest", xaxis=list(fixedrange=T), yaxis=list(fixedrange=T))
+
+overview = kabinette[,c("wahl", zeitpunkte)]
+overview = as.data.frame(pivot_longer(overview, cols=2:ncol(overview)))
+colnames(overview)[3] = "Abweichung"
+overview$tooltip = sapply(1:nrow(overview), function(i) get_tooltip(overview[i, "wahl"], overview[i, "name"]))
+overview[is.na(overview$Abweichung), "tooltip"] = ""
+
+p2 = ggplotly(ggplot(overview, aes(name, wahl, fill=Abweichung)) +
+  geom_tile(aes(fill = Abweichung), na.rm=T) +
+  geom_text(aes(label = ifelse(!is.na(Abweichung), paste0("<span style='color:", ifelse(abs(Abweichung)<5, "black", "white"), "'>", round(Abweichung,1), "%</span>"), ""), text=tooltip)) +
+  scale_fill_gradient2(low=scales::muted("violetred"), mid="white", high=scales::muted("aquamarine")) +
+  theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()), tooltip="text") %>%
+  style(hoverinfo = "none", traces = c(1)) %>%
+  layout(xaxis=list(fixedrange=T, tickfont=list(size=16)), yaxis=list(fixedrange=T, tickfont=list(size=16)))
+
+partial_bundle(subplot(p1, plotly_empty() %>% layout(xaxis=list(fixedrange=T), yaxis=list(fixedrange=T)), p2, widths=c(0.2,0.01,0.79)) %>%
+  config(displayModeBar = FALSE))
+```
+
+Die linke Spalte zeigt die Regierungskoalitionen, die nach den Bundestagswahlen seit 1972 gebildet wurden. Die Prozentzahlen beziehen sich auf den Zweitstimmen-Anteil der Regierungsparteien, gibt also in etwa den Anteil der Wählerschaft wider, der durch die Regierung repräsentiert wird. Der Zeitraum wurde gewählt, da das [Wahlalter 1970 auf 18 Jahre](https://de.wikipedia.org/wiki/Wahlrecht#Deutschland) reduziert wurde. Ein Tooltip über den Prozentzahlen listet die die Zweitstimmen der verschiedenen Parteien auf.
+
+Die rechte Tabelle zeigt die Abweichungen des Zweitstimmen-Anteils der Regierungsparteien je nach Altersgruppe an, ermittelt aus der [repräsentativen Wahlstatistik](https://de.wikipedia.org/wiki/Repr%C3%A4sentative_Wahlstatistik). <span style="color:#fff; background-color:#8c005e; box-shadow: 0px -1px 0px 3px #8c005e;">Violett</span> hervorgehobene Altersgruppen haben verhältnismässig weniger Zweitstimmen für die Regierungsparteien abgegeben als der Durchschnitt, während <span style="color:#fff; background-color:#1d6738; box-shadow: 0px -1px 0px 3px #1d6738;">grüne</span> die Regierungsparteien häufiger wählten. 1994 und 1998 wurde die repräsentative Wahlstatistik ausgesetzt. Der Anteil der verschiedenen Altersgruppen an der Bevölkerung variiert von Jahr zu Jahr und unterliegt dem [demographischen Wandel](https://de.wikipedia.org/wiki/Demografischer_Wandel_in_Deutschland).
+
+Datenquelle: [Bundeswahlleiter (csv)](https://www.bundeswahlleiter.de/dam/jcr/f0610db5-f84c-430e-96e1-19be7f599e60/btw17_rws_zwst-1953.csv) / [(pdf)](https://www.bundeswahlleiter.de/dam/jcr/e0d2b01f-32ff-40f0-ba9f-50b5f761bb22/btw17_heft4.pdf)
