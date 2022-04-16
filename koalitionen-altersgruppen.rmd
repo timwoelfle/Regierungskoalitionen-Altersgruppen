@@ -1,6 +1,6 @@
 ---
-title: "Stimmen für deutsche Regierungsparteien nach Alter 1972-2021"
-subtitle: "Votes for German government parties by age 1972-2021"
+title: "Abweichung des Zweitstimmen-Anteils der deutschen Regierungsparteien nach Alter 1972-2021"
+subtitle: "Deviation of German government party votes by age 1972-2021"
 author: "<a href='https://twitter.com/timwoelfle'>Tim Woelfle</a>"
 output:
   html_notebook:
@@ -34,8 +34,8 @@ kabinette = data.frame(
   kabinett = c("Brandt II + Schmidt I", "Schmidt II", "Schmidt III", "Kohl II", "Kohl III", "Kohl IV", "Kohl V", "Schröder I", "Schröder II", "Merkel I", "Merkel II", "Merkel III", "Merkel IV", "Scholz I")
 )
 #kabinette=kabinette[-c(7:8),] # 1994 und 1998 entfernen (repräsentative Wahlstatistik wurde ausgesetzt)
+#kabinette = kabinette[9:14,] # just show 2002-2021, set fig.width=8, fig.height=3
 rownames(kabinette) = kabinette$wahl
-#kabinette = kabinette[9:14,] # just show 2002-2021, set fig.height=2.6
 
 zeitpunkte = c("18 - 24", "25 - 34", "35 - 44", "45 - 59", "60 und mehr")
 
@@ -89,7 +89,7 @@ p2 = ggplotly(ggplot(overview, aes(name, wahl, fill=Abweichung)) +
   geom_tile(aes(fill = Abweichung), na.rm=T) +
   geom_text(aes(label = ifelse(!is.na(Abweichung), paste0("<span style='color:", ifelse(abs(Abweichung)<5, "black", "white"), "'>", round(Abweichung,1), "%</span>"), ""), text=tooltip)) +
   scale_fill_gradient2(low=scales::muted("violetred"), mid="white", high=scales::muted("aquamarine")) +
-  theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()), tooltip="text") %>%
+  theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none"), tooltip="text") %>%
   style(hoverinfo = "none", traces = c(1)) %>%
   layout(xaxis=list(fixedrange=T, tickfont=list(size=16)), yaxis=list(fixedrange=T, tickfont=list(size=16)))
 
@@ -99,7 +99,7 @@ partial_bundle(subplot(p1, plotly_empty() %>% layout(xaxis=list(fixedrange=T), y
 
 Die linke Spalte zeigt die deutschen Regierungskoalitionen, die nach den Bundestagswahlen seit 1972 gebildet wurden. Die Prozentzahlen beziehen sich auf den Zweitstimmen-Anteil der Regierungsparteien, gibt also in etwa den Anteil der Wählerschaft wider, der durch die Regierung repräsentiert wird. Der Tooltip über den Prozentzahlen listet die die Zweitstimmen der verschiedenen Parteien auf. Der Zeitraum wurde gewählt, da das [Wahlalter 1970 auf 18 Jahre](https://de.wikipedia.org/wiki/Wahlrecht#Deutschland) reduziert wurde.
 
-Die rechte Tabelle zeigt die Abweichungen des Zweitstimmen-Anteils der Regierungsparteien je nach Altersgruppe an, ermittelt aus der [repräsentativen Wahlstatistik](https://www.bundeswahlleiter.de/bundestagswahlen/2021/informationen-waehler/rws.html). <span style="color:#fff; background-color:#8c005e; box-shadow: 0px -1px 0px 3px #8c005e;">Violett</span> hervorgehobene Altersgruppen haben verhältnismässig weniger Zweitstimmen für die Regierungsparteien abgegeben als der Durchschnitt, während <span style="color:#fff; background-color:#1d6738; box-shadow: 0px -1px 0px 3px #1d6738;">grüne</span> die Regierungsparteien häufiger wählten. 1994 und 1998 wurde die repräsentative Wahlstatistik [ausgesetzt](https://de.wikipedia.org/wiki/Repr%C3%A4sentative_Wahlstatistik#Geschichte). Der Anteil der verschiedenen Altersgruppen an der Bevölkerung variiert von Jahr zu Jahr und unterliegt dem [demographischen Wandel](https://de.wikipedia.org/wiki/Demografischer_Wandel_in_Deutschland).
+Die rechte Tabelle zeigt die Abweichungen des Zweitstimmen-Anteils der deutschen Regierungsparteien je nach Altersgruppe an, ermittelt aus der [repräsentativen Wahlstatistik](https://www.bundeswahlleiter.de/bundestagswahlen/2021/informationen-waehler/rws.html). <span style="color:#fff; background-color:#8c005e; box-shadow: 0px -1px 0px 3px #8c005e;">Violett</span> hervorgehobene Altersgruppen haben verhältnismässig weniger Zweitstimmen für die Regierungsparteien abgegeben als der Durchschnitt, während <span style="color:#fff; background-color:#1d6738; box-shadow: 0px -1px 0px 3px #1d6738;">grüne</span> die Regierungsparteien häufiger wählten. 1994 und 1998 wurde die repräsentative Wahlstatistik [ausgesetzt](https://de.wikipedia.org/wiki/Repr%C3%A4sentative_Wahlstatistik#Geschichte). Der Anteil der verschiedenen Altersgruppen an der Bevölkerung variiert von Jahr zu Jahr und unterliegt dem [demographischen Wandel](https://de.wikipedia.org/wiki/Demografischer_Wandel_in_Deutschland).
 
 Datenquelle: [Bundeswahlleiter (csv)](https://bundeswahlleiter.de/dam/jcr/0c8deca8-4030-419c-9fa8-5ab770cfa123/btw_rws_zwst-1953.csv) / [(pdf)](https://bundeswahlleiter.de/dam/jcr/8ad0ca1f-a037-48f8-b9f4-b599dd380f02/btw21_heft4.pdf)
 
@@ -107,6 +107,6 @@ Datenquelle: [Bundeswahlleiter (csv)](https://bundeswahlleiter.de/dam/jcr/0c8dec
 
 The left column shows the German government coalitions formed since 1972. The percentages indicate the proportion the government parties gained together in the respective parliamentary election (in secondary votes), thus roughly representing the proportion of voters represented by the government. The tooltip over the percentages shows the votes for each party. The timeframe was chosen as the [voting age was reduced to 18 in 1970](https://en.wikipedia.org/wiki/Suffrage#Germany).
 
-The table on the right shows the deviation of government party votes per age group, derived through the [representative electoral statistics](https://www.bundeswahlleiter.de/en/bundestagswahlen/2021/informationen-waehler/rws.html). <span style="color:#fff; background-color:#8c005e; box-shadow: 0px -1px 0px 3px #8c005e;">Violet</span> age groups voted less for government parties compared to the average, while <span style="color:#fff; background-color:#1d6738; box-shadow: 0px -1px 0px 3px #1d6738;">green</span> age groups voted for them more. The representative electoral statistics were suspended in 1994 and 1998. The proportion of the different age groups among the total population varies from year to year and is subject to [demographic change](https://en.wikipedia.org/wiki/Ageing_of_Europe#Germany).
+The table on the right shows the deviation of German government party votes by age groups, derived through the [representative electoral statistics](https://www.bundeswahlleiter.de/en/bundestagswahlen/2021/informationen-waehler/rws.html). <span style="color:#fff; background-color:#8c005e; box-shadow: 0px -1px 0px 3px #8c005e;">Violet</span> age groups voted less for government parties compared to the average, while <span style="color:#fff; background-color:#1d6738; box-shadow: 0px -1px 0px 3px #1d6738;">green</span> age groups voted for them more. The representative electoral statistics were suspended in 1994 and 1998. The proportion of the different age groups among the total population varies from year to year and is subject to [demographic change](https://en.wikipedia.org/wiki/Ageing_of_Europe#Germany).
 
 Source: [Bundeswahlleiter (csv)](https://bundeswahlleiter.de/dam/jcr/0c8deca8-4030-419c-9fa8-5ab770cfa123/btw_rws_zwst-1953.csv) / [(pdf)](https://bundeswahlleiter.de/dam/jcr/8ad0ca1f-a037-48f8-b9f4-b599dd380f02/btw21_heft4.pdf)
