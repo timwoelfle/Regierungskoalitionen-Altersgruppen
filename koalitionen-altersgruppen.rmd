@@ -89,7 +89,7 @@ p2 = ggplotly(ggplot(overview, aes(name, wahl, fill=Abweichung)) +
   geom_tile(aes(fill = Abweichung), na.rm=T) +
   geom_text(aes(label = ifelse(!is.na(Abweichung), paste0("<span style='color:", ifelse(abs(Abweichung)<5, "black", "white"), "'>", round(Abweichung,1), "%</span>"), ""), text=tooltip)) +
   scale_fill_gradient2(low=scales::muted("violetred"), mid="white", high=scales::muted("aquamarine")) +
-  theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), legend.position = "none"), tooltip="text") %>%
+  theme_minimal() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()), tooltip="text") %>%
   style(hoverinfo = "none", traces = c(1)) %>%
   layout(xaxis=list(fixedrange=T, tickfont=list(size=16)), yaxis=list(fixedrange=T, tickfont=list(size=16)))
 
